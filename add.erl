@@ -1,6 +1,6 @@
 %% @doc Erlang mini project.
 -module(add).
--export([start/3, start/4, listify/2, zeros/2, tupleMaker/2, makeArgs/2]).
+-export([start/3, start/4, listify/2, zeros/2, tupleMaker/2, makeArgs/2,  crunchNum/4, doCalc/7, addProc/4, doCalcDelay/8]).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,6 +126,8 @@ splitToChunk(List) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+% Launch processes that do the calculations and return the results.
 -spec go(MathArgs, Options, Base, PID) -> tuple() when
       MathArgs::list(),
       Options::atom() | tuple(),
@@ -133,12 +135,106 @@ splitToChunk(List) ->
       PID::integer().
 
 go([], Options, Base, PID) ->
-  PID!0;
+  PID!0,
+  receive
+    {Tot, Carried, CarriedList} ->
+    io:format("addition complete~n"),
+    {[Carried|Tot], [Carried|CarriedList]}
+  end;
 
 go([H|T], Options, Base, PID) ->
   NextPid = spawn(add, addProc, [H, Options, Base, PID]),
+  io:format("new process started"),
   go(T, Options, Base, NextPid). 
+
+% Adds two digits
+-spec crunchNum(A, B, N, Base) -> tuple() when
+      A::integer(),
+      B::integer(),
+      N::integer(),
+      Base::integer().
+
+crunchNum(A, B, N, Base) ->
+  if A + B  + N < Base ->
+      {(A + B + N), 0};
+    true ->
+      {((A + B + N) rem Base), 1}
+  end.
+
+% Does a calculation without a delay
+-spec doCalc(NumTuple, Base, N, Sums, Carri, Id, Daddy) -> void when
+      NumTuple::tuple(),
+      Base::integer(),
+      N::integer(),
+      Sums::list(),
+      Carri::list(),
+      Id::atom(),
+      Daddy::pid().
+
+doCalc({[], []}, Base, N, Sums, Carri, Id, Daddy) ->
+  Daddy!{Sums, Carri, N, Id};
+
+doCalc({[FA|LA], [FB|LB]}, Base, N, Sums, Carri, Id, Daddy) ->
+  {Tot, Car} = crunchNum(FA, FB, N, Base),
+  doCalc({LA, LB}, Base, Car, [Tot|Sums], [N|Carri], Id, Daddy).
   
+% Does a calculation with a delay
+-spec doCalcDelay(NumTuple, Base, N, Sums, Carri, Id, Options, Daddy) -> void when
+      NumTuple::tuple(),
+      Base::integer(),
+      N::integer(),
+      Sums::list(),
+      Carri::list(),
+      Id::atom(),
+      Options::tuple(),
+      Daddy::pid().
+
+doCalcDelay({[], []}, Base, N, Sums, Carri, Id, {Min, Max}, Daddy) ->
+  Daddy!{Sums, Carri, N, Id};
+
+doCalcDelay({[FA|LA], [FB|LB]}, Base, N, Sums, Carri, Id, {Min, Max}, Daddy) ->
+  NapLen = Min + rand:uniform(Max - Min),
+  io:format("zzzzzzzz~n"),
+  timer:sleep(NapLen),
+  {Tot, Car} = crunchNum(FA, FB, N, Base),
+  doCalcDelay({LA, LB}, Base, Car, [Tot|Sums], [N|Carri], Id, {Min, Max}, Daddy).
+  
+% Retrieves the result from the spawned proccesses. 
+-spec comeChildren(N, A, B) -> tuple() when
+      N::integer(),
+      A::integer(),
+      B::integer().
+
+comeChildren(2, A, B) ->
+  {A, B};
+
+comeChildren(N, A, B) ->
+  receive
+    {D, E, F, zero} ->
+      comeChildren((N+1), {D, E, F}, B);
+    {D, E, F, one} ->
+      comeChildren((N+1), A, {D, E, F})
+  end.
+
+% The spawned processes
+-spec addProc(NumTuple, Options, Base, PID) -> void when
+      NumTuple::tuple(),
+      Options::tuple() | atom(),
+      Base::integer(),
+      PID::integer().
+
+addProc(NumTuple, Options, Base, PID) ->
+  Me = self(),
+  if 
+    Options == none ->
+      spawn(add, doCalc, [NumTuple, Base, 0, [], [], zero, Me]),
+      spawn(add, doCalc, [NumTuple, Base, 1, [], [], one, Me]);
+    true ->
+      spawn(add, doCalcDelay, [NumTuple, Base, 0, [], [], zero, Options, Me]),
+      spawn(add, doCalcDelay, [NumTuple, Base, 1, [], [], one, Options, Me])
+  end,
+
+  comeChildren(0, {}, {}).
 
 
 
