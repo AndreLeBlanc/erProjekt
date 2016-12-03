@@ -19,7 +19,7 @@
       Base::integer().
 
 start(A,B, Base) ->
-    start(A, B, Base, [none]).
+    start(A, B, Base, none).
 
 
 %% @doc TODO: add documentation
@@ -38,8 +38,7 @@ start(A,B,Base, Options) ->
     SplitaB = splitToChunk(lists:reverse(BZero)),
     MathArgs = makeArgs(SplitA, SplitaB),
     
-    go(MathArgs, Options, self()),
-    {Sum, Carry} = {sum, carry},
+    {Sum, Carry} = go(MathArgs, Options, Base, self()),
     printRes(ListOfA, ListOfB, Sum, Carry).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -127,8 +126,19 @@ splitToChunk(List) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-go(MathArgs, Options, PID) ->
-  tbi.
+-spec go(MathArgs, Options, Base, PID) -> tuple() when
+      MathArgs::list(),
+      Options::atom() | tuple(),
+      Base::integer(),
+      PID::integer().
+
+go([], Options, Base, PID) ->
+  PID!0;
+
+go([H|T], Options, Base, PID) ->
+  NextPid = spawn(add, addProc, [H, Options, Base, PID]),
+  go(T, Options, Base, NextPid). 
+  
 
 
 
