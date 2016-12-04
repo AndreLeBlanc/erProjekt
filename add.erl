@@ -1,6 +1,6 @@
 %% @doc Erlang mini project.
 -module(add).
--export([start/3, start/4, listify/2, zeros/2, tupleMaker/2, makeArgs/2,  crunchNum/4, doCalc/7, addProc/4, doCalcDelay/8]).
+-export([start/3, start/4, listify/2, zeros/2, tupleMaker/2, makeArgs/2,  crunchNum/4, doCalc/7, addProc/4, doCalcDelay/8, go/4, splitToChunk/1]).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,8 +34,8 @@ start(A,B,Base, Options) ->
     ListOfA = listify(A),
     ListOfB = listify(B),
     {AZero, BZero} = tupleMaker(A, B),
-    SplitA = splitToChunk(lists:reverse(AZero)), 
-    SplitaB = splitToChunk(lists:reverse(BZero)),
+    SplitA = splitToChunk(AZero), 
+    SplitaB = splitToChunk(BZero),
     MathArgs = makeArgs(SplitA, SplitaB),
     
     {Sum, Carry} = go(MathArgs, Options, Base, self()),
@@ -115,8 +115,20 @@ makeAux([H|T], [I|J], Args) ->
 makeAux(A, B, Args) ->
   Args.
 
-splitToChunk(List) -> 
-  tbi.
+%% @doc Splits a list or function into 4 sub-lists
+%% @doc Splits a list or function into 4 sub-lists
+splitToChunk(List) ->
+  splitToChunk([], List).
+
+
+splitToChunk([], Acc) ->
+  lists:reverse(Acc);
+
+splitToChunk([Head], Acc) ->
+  lists:reverse([[Head]|Acc]);
+
+splitToChunk([HeadOne, HeadTwo|Tail], Acc) ->
+  splitToChunk(Tail, [[HeadOne, HeadTwo]|Acc]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,14 +144,14 @@ splitToChunk(List) ->
       MathArgs::list(),
       Options::atom() | tuple(),
       Base::integer(),
-      PID::integer().
+      PID::pid().
 
 go([], Options, Base, PID) ->
-  PID!0,
+  PID!{[], [], 0},
   receive
-    {Tot, Carried, CarriedList} ->
+    {Tot, CarriedList, Carried} ->
     io:format("addition complete~n"),
-    {[Carried|Tot], [Carried|CarriedList]}
+    {[Carried|Tot], CarriedList}
   end;
 
 go([H|T], Options, Base, PID) ->
@@ -155,7 +167,7 @@ go([H|T], Options, Base, PID) ->
       Base::integer().
 
 crunchNum(A, B, N, Base) ->
-  if A + B  + N < Base ->
+  if (A + B  + N < Base) ->
       {(A + B + N), 0};
     true ->
       {((A + B + N) rem Base), 1}
@@ -176,7 +188,7 @@ doCalc({[], []}, Base, N, Sums, Carri, Id, Daddy) ->
 
 doCalc({[FA|LA], [FB|LB]}, Base, N, Sums, Carri, Id, Daddy) ->
   {Tot, Car} = crunchNum(FA, FB, N, Base),
-  doCalc({LA, LB}, Base, Car, [Tot|Sums], [N|Carri], Id, Daddy).
+  doCalc({LA, LB}, Base, Car, [Tot|Sums], [Car|Carri], Id, Daddy).
   
 % Does a calculation with a delay
 -spec doCalcDelay(NumTuple, Base, N, Sums, Carri, Id, Options, Daddy) -> void when
@@ -197,7 +209,7 @@ doCalcDelay({[FA|LA], [FB|LB]}, Base, N, Sums, Carri, Id, {Min, Max}, Daddy) ->
   io:format("zzzzzzzz~n"),
   timer:sleep(NapLen),
   {Tot, Car} = crunchNum(FA, FB, N, Base),
-  doCalcDelay({LA, LB}, Base, Car, [Tot|Sums], [N|Carri], Id, {Min, Max}, Daddy).
+  doCalcDelay({LA, LB}, Base, Car, [Tot|Sums], [Car|Carri], Id, {Min, Max}, Daddy).
   
 % Retrieves the result from the spawned proccesses. 
 -spec comeChildren(N, A, B) -> tuple() when
@@ -234,7 +246,20 @@ addProc(NumTuple, Options, Base, PID) ->
       spawn(add, doCalcDelay, [NumTuple, Base, 1, [], [], one, Options, Me])
   end,
 
-  comeChildren(0, {}, {}).
+  {{DigitsNoCar, CarriNoCar, CarNoCar}, {DigitsCar, CarriCar, CarCar}} = comeChildren(0, {}, {}),
+  
+  receive
+    {Sums, Carri, 0} ->
+      io:format("ej car~n"),
+      Carrid = CarriNoCar ++ Carri,
+      Sumz = DigitsNoCar ++ Sums,
+      PID!{Sumz, Carrid, CarNoCar};
+    {Sums, Carri, 1} ->
+      io:format("car~n"),
+      Carrid = CarriCar ++ Carri,
+      Sumz = DigitsCar ++ Sums,
+      PID!{Sumz, Carrid, CarCar}
+  end.
 
 
 
@@ -248,7 +273,7 @@ addProc(NumTuple, Options, Base, PID) ->
 
 
 printRes(ListOfA, ListOfB, Sum, Carry) ->
-  tbi.
+  Sum.
 
 
 
