@@ -1,6 +1,7 @@
 %% @doc Erlang mini project.
 -module(add).
 -export([start/3, start/4, listify/2, zeros/2, tupleMaker/2, makeArgs/2,  crunchNum/4, doCalc/7, addProc/4, doCalcDelay/8, go/4, splitToChunk/1]).
+-include_lib("eunit/include/eunit.hrl").
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -115,20 +116,8 @@ makeAux([H|T], [I|J], Args) ->
 makeAux(A, B, Args) ->
   Args.
 
-%% @doc Splits a list or function into 4 sub-lists
-%% @doc Splits a list or function into 4 sub-lists
-splitToChunk(List) ->
-  splitToChunk([], List).
-
-
-splitToChunk([], Acc) ->
-  lists:reverse(Acc);
-
-splitToChunk([Head], Acc) ->
-  lists:reverse([[Head]|Acc]);
-
-splitToChunk([HeadOne, HeadTwo|Tail], Acc) ->
-  splitToChunk(Tail, [[HeadOne, HeadTwo]|Acc]).
+splitToChunk(A) ->
+  tbi.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -284,3 +273,45 @@ printRes(ListOfA, ListOfB, Sum, Carry) ->
 %%%%%%%%%                                                  %%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+listify_test() ->
+  [?_assertEqual([1,2,3,4,5,6], listify(123456)),
+  ?_assertEqual([1], listify(1)),
+  ?_assertEqual([1,2], listify(12))
+  ].
+
+zeros_test() ->
+  [?_assertEqual([1,2,3,4,5,6,0,0,0], zeros([1,2,3,4,5,6], 9)),
+  ?_assertEqual([1,2,3,4,5,6], zeros([1,2,3,4,5,6], 6)),
+  ?_assertEqual([0,0,0], zeros([], 3))
+  ].
+
+tuplemaker_test() ->
+  A = {[1,2,3,4,5,6,0,0,0], [1,2,3,4]},
+  B = {[], []},
+  C = {[1], [1]},
+  D = tupleMaker([1,2,3,4,5,6,0,0,0], [1,2,3,4]),
+  E = tupleMaker([], []),
+  F = tupleMaker([1], [1]),
+
+  [?_assertEqual(A, D),
+  ?_assertEqual(B, E),
+  ?_assertEqual(C, F)
+  ].
+
+makeArgs_test() ->
+  [?_assertEqual([{[1,2], [5,6]}, {[3,4], [7,8]}], makeArgs([[1,2], [3,4]], [[5,6], [7,8]])),
+  ?_assertEqual([{[], [5,6]}, {[3,4], [7,8]}], makeArgs([[], [3,4]], [[5,6], [7,8]])),
+  ?_assertEqual([{[5,6]}, {[7,8]}], makeArgs([[5,6]], [[7,8, 9]]))
+  ].
+
+splitToChunk_test() ->
+   [?_assertEqual([1,2,3,4,5,6,7,8], splitToChunk([[2,1], [4,3], [6,5], [8,7]])),
+   ?_assertEqual([1,2,3,4], splitToChunk([[1], [2], [3], [4]])),
+   ?_assertNotEqual([1,2,3,4], splitToChunk([[1], [2], [3], [4]])),
+   ?_assertEqual([1,2], splitToChunk([[1], [2]]))
+   ].
+
+
+t_test() ->
+  1==2.
