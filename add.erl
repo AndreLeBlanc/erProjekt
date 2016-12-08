@@ -1,6 +1,6 @@
 %% @doc Erlang mini project.
 -module(add).
--export([start/3, start/4, listify/1, zeros/2, tupleMaker/2, makeArgs/2,  crunchNum/4, doCalc/7, addProc/4, doCalcDelay/8, go/4, splitToChunk/1]).
+-export([start/3, start/4, listify/1, zeros/2, tupleMaker/2, makeArgs/2,  crunchNum/4, doCalc/7, addProc/4, doCalcDelay/8, go/4]).
 -include_lib("eunit/include/eunit.hrl").
 
 
@@ -34,13 +34,11 @@ start(A,B, Base) ->
 start(A,B,Base, Options) ->
     ListOfA = listify(A),
     ListOfB = listify(B),
-    {AZero, BZero} = tupleMaker(A, B),
-    SplitA = splitToChunk(AZero), 
-    SplitaB = splitToChunk(BZero),
-    MathArgs = makeArgs(SplitA, SplitaB),
+    {AZero, BZero} = tupleMaker(ListOfA, ListOfB),
+    MathArgs = makeArgs(AZero, BZero),
     
     {Sum, Carry} = go(MathArgs, Options, Base, self()),
-    printRes(ListOfA, ListOfB, Sum, Carry).
+    printRes(A, B, Sum, Carry).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,23 +99,48 @@ tupleMaker(AList, BList) ->
       A::list(),
       B::list().
 
+makeArgs(A, B) when length(A) =< 4 ->
+  makeAuxShort(A, B, []);
+
 makeArgs(A, B) ->
-  makeAux(A, B, []).
+  Len = length(A) div 4,
+  makeAuxLong(A, B, Len, []).
+
+% Implements makesArgs with longer lists.
+-spec makeAuxLong(A, B, Len, Args) -> list() when
+      A::list(),
+      B::list(),
+      Len::integer,
+      Args::list().
+
+makeAuxLong([], [], Len, Args) ->
+  Args;
+
+makeAuxLong(A, B, Len, Args) ->
+  if (length(A) < Len) ->
+      C = lists:reverse(A),
+      D = lists:reverse(B),
+      Args ++ [{C, D}];
+    true ->
+      {Aite, ARemain} = lists:split(Len, A),
+      {Bite, Bremain} = lists:split(Len, B),
+      E = lists:reverse(Aite),
+      F = lists:reverse(Bite),
+      Arg = Args ++ [{E, F}],
+      makeAuxLong(ARemain, Bremain, Len, Arg)
+  end.
 
 % Implements makesArgs
--spec makeAux(A, B, Args) -> list() when
+-spec makeAuxShort(A, B, Args) -> list() when
       A::list(),
       B::list(),
       Args::list().
 
-makeAux([H|T], [I|J], Args) ->
-  makeAux(T, J, [{H, I} | Args]);
+makeAuxShort([H|T], [I|J], Args) ->
+  makeAuxShort(T, J, Args ++ [{[H], [I]}]);
 
-makeAux(A, B, Args) ->
+makeAuxShort(A, B, Args) ->
   Args.
-
-splitToChunk(A) ->
-  tbi.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -261,8 +284,8 @@ addProc(NumTuple, Options, Base, PID) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-printRes(ListOfA, ListOfB, Sum, Carry) ->
-  Sum.
+printRes(A, B, Sum, Carry) ->
+    
 
 
 
@@ -297,15 +320,24 @@ tuplemaker_test() ->
   ?assertEqual(C, F).
 
 makeArgs_test() ->
-  ?assertEqual([{[3,4], [7,8]}, {[1,2], [5,6]}], makeArgs([[1,2], [3,4]], [[5,6], [7,8]])),
-  ?assertEqual([{[3,4], [7,8]}, {[], [5,6]}], makeArgs([[], [3,4]], [[5,6], [7,8]])),
-  ?assertEqual([{[5,6], [7,8]}], makeArgs([[5,6]], [[7,8]])).
+  ?assertEqual([{[2,1],[2,1]},{[4,3],[4,3]},{[6,5],[6,5]},{[8,7],[8,7]}], makeArgs([1,2,3,4,5,6,7,8],[1,2,3,4,5,6,7,8])),
+  ?assertEqual([{[1],[5]},{[2],[6]},{[3],[7]},{[4],[8]}], makeArgs([1,2,3,4],[5,6,7,8])),
+  ?assertEqual([{[1],[5]},{[2],[6]},{[3],[7]},{[4], [8]},{[0], [9]}], makeArgs([1,2,3,4,0],[5,6,7,8,9])).
 
-%splitToChunk_test() ->
- %  ?assertEqual([1,2,3,4,5,6,7,8], splitToChunk([[2,1], [4,3], [6,5], [8,7]])),
- %  ?assertEqual([1,2,3,4], splitToChunk([[1], [2], [3], [4]])),
- %  ?assertNotEqual([1,2,3,4], splitToChunk([[1], [2], [3], [4]])),
-  % ?assertEqual([1,2], splitToChunk([[1], [2]])).
-   
+crunchNum_test() ->
+  ?assertEqual({5, 0}, crunchNum(2,3,0, 10)),
+  ?assertEqual({5, 1}, crunchNum(6,9,0, 10)),
+  ?assertEqual({6, 0}, crunchNum(2,3,1, 10)),
+  ?assertEqual({0, 1}, crunchNum(1,1,0, 2)),
+  ?assertEqual({1, 0}, crunchNum(1,0,0, 2)).
 
-
+go_test() ->
+  ?assertEqual({[0,2,4,6,9,1,3,5,6],[0,0,0,0,1,1,1,1]}, go(makeArgs([1,2,3,4,5,6,7,8],[1,2,3,4,5,6,7,8]), none, 10, self())),
+  ?assertEqual({[1,8,2,4,6,9,1,3,5,6],[1,0,0,0,0,1,1,1,1]}, go(makeArgs([9,1,2,3,4,5,6,7,8],[9,1,2,3,4,5,6,7,8]), none, 10, self())),
+  ?assertEqual({[0,2,4,6,8],[0,0,0,0]}, go(makeArgs([1,2,3,4],[1,2,3,4]), none, 10, self())),
+  ?assertEqual({[0,2,4],[0,0]}, go(makeArgs([1,2],[1,2]), none, 10, self())),
+  ?assertEqual({[0,2,5,4],[0,0,1]}, go(makeArgs([1,2,5],[1,2,9]), none, 10, self())),
+  ?assertEqual({[1,0,0,1],[1,0,0]}, go(makeArgs([1,0,1],[1,0,0]), none, 2, self())),
+  ?assertEqual({[1,0,1,1],[1,0,0]}, go(makeArgs([1,1,1],[1,0,0]), none, 2, self())),
+  ?assertEqual({[1,1,1,1,0,1,0,1,1],[1,1,1,1,0,0,0,0]}, go(makeArgs([1,1,1,1,0,0,1,0],[1,1,1,1,1,0,0,1]), none, 2, self())),
+  ?assertEqual({[1,1,1,1,0,1,0,1],[1,1,1,1,0,0,0]}, go(makeArgs([1,1,1,1,0,0,1],[1,1,1,1,1,0,0]), none, 2, self())).

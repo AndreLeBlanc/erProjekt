@@ -152,4 +152,3 @@ pmax_random_plist_test() ->
     N = 10000,
     L = random_list(N),
     ?assertEqual(lists:max(L), pmax(L, 10)).
-    
