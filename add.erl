@@ -1,6 +1,6 @@
 %% @doc Erlang mini project.
 -module(add).
--export([start/3, start/4, listify/1, zeros/2, tupleMaker/2, makeArgs/2,  crunchNum/4, doCalc/7, addProc/4, doCalcDelay/8, go/4]).
+-export([start/3, start/4, listify/1, zeros/2, tupleMaker/2, makeArgs/2,  crunchNum/4, doCalc/7, addProc/4, doCalcDelay/8, go/4, printLast/1]).
 -include_lib("eunit/include/eunit.hrl").
 
 
@@ -168,7 +168,7 @@ go([], Options, Base, PID) ->
 
 go([H|T], Options, Base, PID) ->
   NextPid = spawn(add, addProc, [H, Options, Base, PID]),
-  io:format("new process started"),
+  io:format("new process started~n"),
   go(T, Options, Base, NextPid). 
 
 % Adds two digits
@@ -262,12 +262,10 @@ addProc(NumTuple, Options, Base, PID) ->
   
   receive
     {Sums, Carri, 0} ->
-      io:format("ej car~n"),
       Carrid = CarriNoCar ++ Carri,
       Sumz = DigitsNoCar ++ Sums,
       PID!{Sumz, Carrid, CarNoCar};
     {Sums, Carri, 1} ->
-      io:format("car~n"),
       Carrid = CarriCar ++ Carri,
       Sumz = DigitsCar ++ Sums,
       PID!{Sumz, Carrid, CarCar}
@@ -283,8 +281,52 @@ addProc(NumTuple, Options, Base, PID) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% print remainders
+printCar([], A) ->
+  io:format("~n");
+
+printCar([1|T], A) ->
+  io:format(A),
+  printCar(T, A);
+
+printCar([0|T], A) ->
+  io:format(" "),
+  printCar(T, A).
+
+printUnder(0) ->
+  io:format("~n");
+
+printUnder(A) ->
+  io:format("-"),
+  printUnder(A-1).
+
+printLast([H|T], start) ->
+  if H == 0 ->
+      printUnder(length(T)+2),
+      io:format("  "),
+      printLast(T);
+    true ->
+      printUnder(length(T)+3),
+      io:format(" "),
+      printLast([H|T])
+  end.
+
+printLast([]) ->
+  io:format("~n");
+
+printLast([H|T]) ->
+  io:format("~p", [H]),
+  printLast(T).
 
 printRes(A, B, Sum, Carry) ->
+  io:format("  "),
+  printCar(Carry, "1"),
+  io:format("  "),
+  printCar(Carry, "-"),
+  io:format("  ~p ", [A]),
+  io:format("~n+ ~p", [B]),
+  io:format("~n"),
+  printLast(Sum, start).
     
 
 
@@ -341,3 +383,7 @@ go_test() ->
   ?assertEqual({[1,0,1,1],[1,0,0]}, go(makeArgs([1,1,1],[1,0,0]), none, 2, self())),
   ?assertEqual({[1,1,1,1,0,1,0,1,1],[1,1,1,1,0,0,0,0]}, go(makeArgs([1,1,1,1,0,0,1,0],[1,1,1,1,1,0,0,1]), none, 2, self())),
   ?assertEqual({[1,1,1,1,0,1,0,1],[1,1,1,1,0,0,0]}, go(makeArgs([1,1,1,1,0,0,1],[1,1,1,1,1,0,0]), none, 2, self())).
+
+goSleep_test() ->
+  ?assertEqual({[0,2,4,6,9,1,3,5,6],[0,0,0,0,1,1,1,1]}, go(makeArgs([1,2,3,4,5,6,7,8],[1,2,3,4,5,6,7,8]), {200, 2000}, 10, self())),
+  ?assertEqual({[1,8,2,4,6,9,1,3,5,6],[1,0,0,0,0,1,1,1,1]}, go(makeArgs([9,1,2,3,4,5,6,7,8],[9,1,2,3,4,5,6,7,8]), {300, 500}, 10, self())).
