@@ -1,4 +1,7 @@
-%% @doc Erlang mini project.
+%%@doc Erlang mini project.
+
+%% för att edochelvetet ska fungera: edoc:application(add, "erProejkt/add.erl", [{dir, "erProjekt"}]).
+
 -module(add).
 -export([start/3, start/4, listify/1, zeros/2, tupleMaker/2, makeArgs/2,  crunchNum/4, doCalc/7, addProc/4, doCalcDelay/8, go/4, printLast/1]).
 -include_lib("eunit/include/eunit.hrl").
@@ -13,7 +16,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%% @doc TODO: add documentation
+%% @doc add documentation
 -spec start(A,B,Base) -> ok when 
       A::integer(),
       B::integer(), 
@@ -23,7 +26,7 @@ start(A,B, Base) ->
     start(A, B, Base, none).
 
 
-%% @doc TODO: add documentation
+%% @doc add documentation
 -spec start(A,B,Base, Options) -> ok when 
       A::integer(),
       B::integer(), 
@@ -48,7 +51,7 @@ start(A,B,Base, Options) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% toList makes a list of digits out of a number. toList(15) = [1,5]
+%% @doc toList makes a list of digits out of a number. toList(15) = [1,5]
 -spec listify(X) -> list() when
       X:: integer().
 
@@ -77,7 +80,7 @@ zeros(List, Length) when length(List) == Length ->
 zeros(List, Length) ->
   zeros([0|List], Length).
 
-% makes a touple with the two lists
+%% makes a touple with the two lists
 -spec tupleMaker(AList, BList) -> tuple() when
       AList::list(),
       BList::list().
@@ -92,9 +95,9 @@ tupleMaker(AList, BList) ->
       {zeros(AList, length(BList)), BList}
   end.
 
-% Makes a list of tuples of corresponding elements from two lists.
-% Example: A = [[1,2], [3,4]] B = [[5,6], [7,8]]. makeArgs(A, B) = 
-% [{[1,2], [5,6]}, {[3,4], [7,8]}]
+%% Makes a list of tuples of corresponding elements from two lists.
+%% Example: A = [[1,2], [3,4]] B = [[5,6], [7,8]]. makeArgs(A, B) = 
+%% [{[1,2], [5,6]}, {[3,4], [7,8]}]
 -spec makeArgs(A, B) -> list() when
       A::list(),
       B::list().
@@ -106,7 +109,7 @@ makeArgs(A, B) ->
   Len = length(A) div 4,
   makeAuxLong(A, B, Len, []).
 
-% Implements makesArgs with longer lists.
+%% Implements makesArgs with longer lists.
 -spec makeAuxLong(A, B, Len, Args) -> list() when
       A::list(),
       B::list(),
@@ -130,7 +133,7 @@ makeAuxLong(A, B, Len, Args) ->
       makeAuxLong(ARemain, Bremain, Len, Arg)
   end.
 
-% Implements makesArgs
+%% Implements makesArgs
 -spec makeAuxShort(A, B, Args) -> list() when
       A::list(),
       B::list(),
@@ -151,7 +154,7 @@ makeAuxShort(A, B, Args) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-% Launch processes that do the calculations and return the results.
+%% Launch processes that do the calculations and return the results.
 -spec go(MathArgs, Options, Base, PID) -> tuple() when
       MathArgs::list(),
       Options::atom() | tuple(),
@@ -171,7 +174,7 @@ go([H|T], Options, Base, PID) ->
   io:format("new process started~n"),
   go(T, Options, Base, NextPid). 
 
-% Adds two digits
+%% Adds two digits
 -spec crunchNum(A, B, N, Base) -> tuple() when
       A::integer(),
       B::integer(),
@@ -185,7 +188,7 @@ crunchNum(A, B, N, Base) ->
       {((A + B + N) rem Base), 1}
   end.
 
-% Does a calculation without a delay
+%% Does a calculation without a delay
 -spec doCalc(NumTuple, Base, N, Sums, Carri, Id, Daddy) -> void when
       NumTuple::tuple(),
       Base::integer(),
@@ -202,7 +205,7 @@ doCalc({[FA|LA], [FB|LB]}, Base, N, Sums, Carri, Id, Daddy) ->
   {Tot, Car} = crunchNum(FA, FB, N, Base),
   doCalc({LA, LB}, Base, Car, [Tot|Sums], [Car|Carri], Id, Daddy).
   
-% Does a calculation with a delay
+%% Does a calculation with a delay
 -spec doCalcDelay(NumTuple, Base, N, Sums, Carri, Id, Options, Daddy) -> void when
       NumTuple::tuple(),
       Base::integer(),
@@ -223,7 +226,7 @@ doCalcDelay({[FA|LA], [FB|LB]}, Base, N, Sums, Carri, Id, {Min, Max}, Daddy) ->
   {Tot, Car} = crunchNum(FA, FB, N, Base),
   doCalcDelay({LA, LB}, Base, Car, [Tot|Sums], [Car|Carri], Id, {Min, Max}, Daddy).
   
-% Retrieves the result from the spawned proccesses. 
+%% Retrieves the result from the spawned proccesses. 
 -spec comeChildren(N, A, B) -> tuple() when
       N::integer(),
       A::integer(),
@@ -240,7 +243,7 @@ comeChildren(N, A, B) ->
       comeChildren((N+1), A, {D, E, F})
   end.
 
-% The spawned processes
+%% The spawned processes
 -spec addProc(NumTuple, Options, Base, PID) -> void when
       NumTuple::tuple(),
       Options::tuple() | atom(),
@@ -281,7 +284,7 @@ addProc(NumTuple, Options, Base, PID) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% print remainders
+%% print remainders
 printCar([], A) ->
   io:format("~n");
 
@@ -318,14 +321,43 @@ printLast([H|T]) ->
   io:format("~p", [H]),
   printLast(T).
 
-printRes(A, B, Sum, Carry) ->
-  io:format("  "),
+printCarNLine(Carry) ->
+  io:format(" "),
   printCar(Carry, "1"),
-  io:format("  "),
-  printCar(Carry, "-"),
-  io:format("  ~p ", [A]),
-  io:format("~n+ ~p", [B]),
-  io:format("~n"),
+  io:format(" "),
+  printCar(Carry, "-").
+
+ printSpace(0) ->
+ 	true;
+
+ printSpace(A) ->
+ 	io:format(" "),
+ 	printSpace(A-1).
+
+printAB(A, B) ->
+  ALen = length(listify(A)),
+  BLen = length(listify(B)),
+  if ALen == BLen ->
+  	io:format("  ~p ", [A]),
+  	io:format("~n+ ~p~n", [B]);
+  ALen < BLen ->
+  	Add = 2 + (BLen - ALen),
+  	printSpace(Add),
+  	io:format("~p ", [A]),
+  	io:format("~n+ ~p~n", [B]);
+  true ->
+  	io:format("  ~p ", [A]),
+  	Add = 1 + (ALen - BLen),
+  	io:format("~n+"),
+  	printSpace(Add),
+  	io:format("~p~n", [B])
+  end.
+
+
+
+printRes(A, B, Sum, Carry) ->
+  printCarNLine(Carry),
+  printAB(A, B), 
   printLast(Sum, start).
     
 
