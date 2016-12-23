@@ -374,12 +374,18 @@ printRes(A, B, Sum, Carry) ->
 listify_test() ->
   ?assertEqual([1,2,3,4,5,6], listify(123456)),
   ?assertEqual([1], listify(1)),
-  ?assertEqual([1,2], listify(12)).
+  ?assertEqual([1,2], listify(12)),  
+  ?assertEqual([5,5,5,5,5], listify(55555)),
+  ?assertEqual([2,3,5,6], listify(2356)),
+  ?assertEqual([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], listify(10000000000000000)).
 
 zeros_test() ->
   ?assertEqual([0,0,0,1,2,3,4,5,6], zeros([1,2,3,4,5,6], 9)),
   ?assertEqual([1,2,3,4,5,6], zeros([1,2,3,4,5,6], 6)),
-  ?assertEqual([0,0,0], zeros([], 3)).
+  ?assertEqual([0,0,0], zeros([], 3)),
+  ?assertEqual([0,0,0,0,0,0,0,0,0,1], zeros([1], 10)),
+  ?assertEqual([1,1,1,1,1,1], zeros([1,1,1,1,1,1], 6)),
+  ?assertEqual([0,9,9,9,0,0], zeros([9,9,9,0,0], 6)).
 
 tuplemaker_test() ->
   A = {[1,2,3,4,5,6,0,0,0], [0,0,0,0,0,1,2,3,4]},
@@ -388,14 +394,26 @@ tuplemaker_test() ->
   D = tupleMaker([1,2,3,4,5,6,0,0,0], [1,2,3,4]),
   E = tupleMaker([], []),
   F = tupleMaker([1], [1]),
+  G = {[5,5], [1,1]},
+  H = {[1,1,1,2,3], [0,0,0,0,1]},
+  I = {[4,4,4,4,3,3,3,2,2,2,1,1,1], [0,0,0,0,0,0,0,0,0,0,0,0,2]},
+  J = tupleMaker([5,5], [1,1]),
+  K = tupleMaker([1,1,1,2,3], [1]),
+  L = tupleMaker([4,4,4,4,3,3,3,2,2,2,1,1,1], [2]),
 
   ?assertEqual(A, D),
   ?assertEqual(B, E),
-  ?assertEqual(C, F).
+  ?assertEqual(C, F),
+  ?assertEqual(G, J),
+  ?assertEqual(H, K),
+  ?assertEqual(I, L).
 
 makeArgs_test() ->
+  ?assertEqual([{[0],[0]}], makeArgs([0],[0])),
+  ?assertEqual([{[9],[8]},{[7],[6]},{[5],[4]}], makeArgs([9,7,5],[8,6,4])),
   ?assertEqual([{[2,1],[2,1]},{[4,3],[4,3]},{[6,5],[6,5]},{[8,7],[8,7]}], makeArgs([1,2,3,4,5,6,7,8],[1,2,3,4,5,6,7,8])),
   ?assertEqual([{[1],[5]},{[2],[6]},{[3],[7]},{[4],[8]}], makeArgs([1,2,3,4],[5,6,7,8])),
+  ?assertEqual([{[0],[0]},{[1],[1]},{[2],[2]},{[3],[3]},{[4],[4]},{[5],[5]}], makeArgs([0,1,2,3,4,5],[0,1,2,3,4,5])),
   ?assertEqual([{[1],[5]},{[2],[6]},{[3],[7]},{[4], [8]},{[0], [9]}], makeArgs([1,2,3,4,0],[5,6,7,8,9])).
 
 crunchNum_test() ->
@@ -403,6 +421,11 @@ crunchNum_test() ->
   ?assertEqual({5, 1}, crunchNum(6,9,0, 10)),
   ?assertEqual({6, 0}, crunchNum(2,3,1, 10)),
   ?assertEqual({0, 1}, crunchNum(1,1,0, 2)),
+  ?assertEqual({0, 1}, crunchNum(3,3,0, 6)),
+  ?assertEqual({5, 0}, crunchNum(1,4,0, 9)),
+  ?assertEqual({2, 1}, crunchNum(9,9,2, 6)),
+  ?assertEqual({0, 0}, crunchNum(0,0,0, 2)),
+  ?assertEqual({1, 1}, crunchNum(8,7,0, 7)),
   ?assertEqual({1, 0}, crunchNum(1,0,0, 2)).
 
 go_test() ->
